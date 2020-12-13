@@ -1,54 +1,38 @@
 #include <iostream>
-#include "AStar.hpp"
+#include <random>
+#include "rrt.h"
 
 int main()
 {
-    AStar::maps generator;
-    int r, c, w, wr, wc, sr, sc, dr, dc;
+    constexpr int n = 21;
+    std::vector<std::vector<int>> grid(n, std::vector<int>(n, 0));
+    MakeGrid(grid);
 
-    std::cout << "Enter number of row of World :";
-    std::cin >> r;
+    std::random_device rd;
+    std::mt19937 eng(rd());
+    std::uniform_int_distribution<int> distr(0, n - 1);
 
-    std::cout << "Enter number of column of World :";
-    std::cin >> c;
+    Node start(distr(eng), distr(eng), 0, 0, 0, 0);
+    Node goal(distr(eng), distr(eng), 0, 0, 0, 0);
 
-    generator.setWorldSize({r, c});
-    generator.setHeuristic(AStar::Heuristic::euclidean);
-    generator.setDiagonalMovement(true);
+    start.id_ = start.x_ * n + start.y_;
+    start.pid_ = start.x_ * n + start.y_;
+    goal.id_ = goal.x_ * n + goal.y_;
+    start.h_cost_ = abs(start.x_ - goal.x_) + abs(start.y_ - goal.y_);
 
-    std::cout << "Enter number of Obstacles in World :";
-    std::cin >> w;
-    
-    for (int i = 0; i < w; i++) 
-    {
-        std::cout << "Enter positon of Obstacles in World :";
-        std::cin >> wr>>wc;
-    
-        generator.addCollision({ wr,wc });
-    }
-    
-    std::cout << "Enter positon of Source in World :";
-    std::cin >> sr >> sc;
+    grid[start.x_][start.y_] = 0;
+    grid[goal.x_][goal.y_] = 0;
+    PrintGrid(grid);
 
-    std::cout << "Enter positon of Destination in World :";
-    std::cin >> dr >> dc;
+    std::vector<Node> path_vector;
+    std::vector<std::vector<int>> main_grid = grid;
 
-    auto path = generator.findPath({sr, sc}, {dr, dc});
-    auto v = path[0];
+    constexpr double threshold = 2;
+    constexpr int max_iter_x_factor = 20;
 
-    if (v.x != dr || v.y != dc) 
-    {
-        std::cout << "Path not found";
-    }
-
-    else 
-    {
-        std::cout << "Generate path ... \n";
-
-        for (auto& coordinate : path)
-        {
-            std::cout << coordinate.x << " " << coordinate.y << "\n";
-        }
-    }
-    
+    grid = main_grid;
+    RRT new_rrt;
+    path_vector = new_rrt.rrt(grid, start, goal, max_iter_x_factor, threshold);
+    PrintPath(path_vector, start, goal, grid);
+    return 0;
 }
